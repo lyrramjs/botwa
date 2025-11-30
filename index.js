@@ -1451,7 +1451,6 @@ async function createPanelTelegram(ctx, data) {
             `✅ PANEL BERHASIL DIBUAT!\n\nDetail Akun:\nUsername: ${username}\nPassword: ${password}\nEmail: ${email}\n\nDetail Server:\nRAM: ${ramText}\nDisk: ${diskText}\nCPU: ${cpuText}\n\nLogin URL:\n${global.domain}\n\nJoin Group Garansi\n${global.linkgc}`,
             Markup.inlineKeyboard([
                 [Markup.button.url('Login Panel', global.domain)],
-                [Markup.button.callback('Buat Panel Lagi', 'buypanel_again')],
                 [Markup.button.callback('Kembali', 'back_to_menu')]
             ])
         );

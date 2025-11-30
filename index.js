@@ -27,8 +27,8 @@ global.pay = {
 };
 
 // Pterodactyl / Panel API
-global.domain = process.env.PTERO_DOMAIN || 'https://server.my.id';
-global.apikey = process.env.PTERO_APIKEY || 'ptla';
+global.domain = process.env.PTERO_DOMAIN || 'https://server-king-store.loveme.my.id';
+global.apikey = process.env.PTERO_APIKEY || 'ptla_rdscmMTygt8L7pG4uhlbUDVMmxUUyhJnfbXJ3Xtg7s9';
 global.egg = Number(process.env.PTERO_EGG) || 15;
 global.nestid = Number(process.env.PTERO_NESTID) || 5;
 global.loc = Number(process.env.PTERO_LOC) || 1;

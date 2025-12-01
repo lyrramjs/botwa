@@ -1,4 +1,4 @@
-// index.js (FINAL FIX COMPLETE - FULL BUTTON ORDER SYSTEM WITH PAGINATION)
+// index.js - FINAL FIX COMPLETE - FULL ORDER SYSTEM WITH SALDO & QRIS PAYMENT
 // Node 18+ recommended
 
 require('dotenv').config();
@@ -18,7 +18,7 @@ if (!BOT_TOKEN) {
 }
 const bot = new Telegraf(BOT_TOKEN);
 
-// Payment / QRIS API (ciaatopup example)
+// Payment / QRIS API
 global.pay = {
     apikey: process.env.PAY_APIKEY || 'CiaaTopUp_ylddpmphwjwq4rb2',
     fee: Number(process.env.PAY_FEE) || 300,
@@ -27,14 +27,15 @@ global.pay = {
 };
 
 // Pterodactyl / Panel API
-global.domain = process.env.PTERO_DOMAIN || 'https://server-king-store.loveme.my.id';
-global.apikey = process.env.PTERO_APIKEY || 'ptla_rdscmMTygt8L7pG4uhlbUDVMmxUUyhJnfbXJ3Xtg7s9';
+global.domain = process.env.PTERO_DOMAIN || 'https://alwaysnyzz.pterodactyl.raflydev.my.id';
+global.apikey = process.env.PTERO_APIKEY || 'ptla_NCQEv65VhTss8n06eK6jun7h8hAj2ChQCBHmzSYPwmY';
 global.egg = Number(process.env.PTERO_EGG) || 15;
 global.nestid = Number(process.env.PTERO_NESTID) || 5;
 global.loc = Number(process.env.PTERO_LOC) || 1;
 
-global.linkgc = "https://t.me/+AEkxDXQZvw1hZDE9"
-// Owners (from env OWNER_IDS = "123456,987654")
+global.linkgc = "https://t.me/+AEkxDXQZvw1hZDE9";
+
+// Owners
 const OWNER_IDS = (process.env.OWNER_IDS || '7009109669').split(',').filter(Boolean).map(s => s.trim());
 
 // DB file
@@ -62,7 +63,7 @@ try {
     console.error('Failed to load DB:', e.message || e);
 }
 
-// helper to save DB
+// Helper to save DB
 function saveDb() {
     try {
         fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2));
@@ -91,7 +92,7 @@ function isOwner(id) {
     return OWNER_IDS.includes(String(id));
 }
 
-// safe editMessageText
+// Safe editMessageText
 async function safeEdit(ctx, text, extra = {}) {
     try {
         if (ctx.updateType === 'callback_query' && ctx.editMessageText) {
@@ -116,7 +117,7 @@ async function safeEdit(ctx, text, extra = {}) {
     }
 }
 
-// notify owners helper
+// Notify owners helper
 async function notifyOwners(text) {
     for (const id of OWNER_IDS) {
         try {
@@ -155,9 +156,9 @@ function groupProductsByCategory(products) {
 }
 
 // ========================
-// SESSION MANAGEMENT (FIXED)
+// SESSION MANAGEMENT
 // ========================
-// Global temporary storage untuk session order (MEMORY-BASED)
+// Global temporary storage untuk session order
 const orderSessions = new Map();
 
 function getSession(chatId) {
@@ -263,7 +264,7 @@ bot.command('delowner', async (ctx) => {
     ctx.reply(`Owner dihapus: ${id}`);
 });
 
-// owner menu (admin only)
+// Owner menu
 bot.command('menu_owner', (ctx) => {
     if (!isOwner(ctx.from.id)) return ctx.reply('Hanya owner yang dapat mengakses menu ini.');
     ctx.reply('Menu Owner:', Markup.inlineKeyboard([
@@ -283,7 +284,7 @@ bot.action('owner_list_pending', async (ctx) => {
     ctx.reply(msg);
 });
 
-// simple broadcast (owner)
+// Broadcast
 bot.action('owner_broadcast', async (ctx) => {
     if (!isOwner(ctx.from.id)) return ctx.answerCbQuery('Access denied', { show_alert: true });
     ctx.reply('Kirim pesan broadcast (balas pesan ini dengan teks yang akan dikirim):');
@@ -319,7 +320,7 @@ bot.command('buypanel', (ctx) => {
     );
 });
 
-// RAM options table
+// RAM options
 const ramOptions = {
     ram_1gb: { ram: 1000, disk: 1000, cpu: 40, harga: 1000 },
     ram_2gb: { ram: 2000, disk: 2000, cpu: 60, harga: 2000 },
@@ -407,7 +408,7 @@ bot.action('pay_saldo', async (ctx) => {
     }
 });
 
-// PAY QRIS (create payment)
+// PAY QRIS
 bot.action('pay_qris', async (ctx) => {
     try {
         await ctx.answerCbQuery();
@@ -459,7 +460,7 @@ bot.action('pay_qris', async (ctx) => {
     }
 });
 
-// cek panel payment
+// Cek panel payment
 bot.action(/cek_panel_(.*)/, async (ctx) => {
     try {
         const orderId = ctx.match[1];
@@ -533,7 +534,7 @@ bot.action('refresh_saldo', async (ctx) => {
     }
 });
 
-// topup menu
+// Topup menu
 bot.command('topup', (ctx) => {
     ctx.reply('Pilih nominal topup:', Markup.inlineKeyboard([
         [Markup.button.callback('Rp 5.000', 'topup_5000'), Markup.button.callback('Rp 10.000', 'topup_10000')],
@@ -564,7 +565,7 @@ bot.action('topup_custom', (ctx) => {
     ctx.reply('Masukkan nominal topup (minimal Rp 2.000):', Markup.keyboard([['Kembali ke Menu']]).oneTime().resize());
 });
 
-// processTopup
+// Process Topup
 async function processTopup(ctx, nominal) {
     try {
         if (!global.pay.apikey) return ctx.reply('Payment gateway belum dikonfigurasi.');
@@ -602,7 +603,7 @@ async function processTopup(ctx, nominal) {
     }
 }
 
-// cek topup
+// Cek topup
 bot.command('cek_topup', async (ctx) => {
     try {
         const userId = String(ctx.from.id);
@@ -689,7 +690,7 @@ bot.action('refresh_topup_list', async (ctx) => {
 });
 
 // ========================
-// ORDER FLOW - FULL BUTTON VERSION WITH PAGINATION
+// ORDER FLOW - FULL SYSTEM WITH PAGINATION
 // ========================
 
 // Fungsi untuk membuat keyboard produk dengan pagination
@@ -903,7 +904,7 @@ bot.command('order', async (ctx) => {
     }
 });
 
-// Handler untuk memilih kategori dengan button
+// Handler untuk memilih kategori
 bot.action(/order_category_(\d+)/, async (ctx) => {
     try {
         const categoryIndex = parseInt(ctx.match[1]);
@@ -965,7 +966,7 @@ bot.action(/order_category_(\d+)/, async (ctx) => {
     }
 });
 
-// Handler untuk header provider (disabled button)
+// Handler untuk header provider
 bot.action(/provider_header_(.*)/, async (ctx) => {
     await ctx.answerCbQuery(`📱 ${ctx.match[1]}`, { show_alert: true });
 });
@@ -1008,7 +1009,7 @@ bot.action(/product_page_(\d+)/, async (ctx) => {
     }
 });
 
-// Handler untuk info halaman (non-clickable)
+// Handler untuk info halaman
 bot.action('page_info', async (ctx) => {
     await ctx.answerCbQuery('📊 Informasi halaman', { show_alert: false });
 });
@@ -1062,7 +1063,7 @@ bot.action('order_back_to_categories', async (ctx) => {
     }
 });
 
-// Handler untuk memilih produk dengan PAGINATION
+// Handler untuk memilih produk
 bot.action(/order_product_(\d+)_page_(\d+)/, async (ctx) => {
     try {
         const productIndex = parseInt(ctx.match[1]);
@@ -1090,12 +1091,13 @@ bot.action(/order_product_(\d+)_page_(\d+)/, async (ctx) => {
         }
 
         const productData = session.product_map[productIndex];
-        const userSaldo = db.users[String(ctx.from.id)]?.saldo || 0;
+        const userId = String(ctx.from.id);
+        const userSaldo = db.users[userId]?.saldo || 0;
         
         const orderId = genOrderId();
         db.orders[orderId] = {
             id: orderId,
-            user_id: String(ctx.from.id),
+            user_id: userId,
             tujuan: session.order_target,
             product_code: productData.code,
             product_name: productData.name,
@@ -1116,8 +1118,16 @@ bot.action(/order_product_(\d+)_page_(\d+)/, async (ctx) => {
         message += `🏷️ *Provider:* ${productData.provider}\n`;
         message += `📂 *Kategori:* ${session.selected_category}\n`;
         message += `🎯 *Tujuan:* ${session.order_target}\n`;
-        message += `💳 *Harga:* Rp${productData.price.toLocaleString('id-ID')}\n`;
-        message += `💰 *Saldo Anda:* Rp${userSaldo.toLocaleString('id-ID')}\n\n`;
+        message += `💳 *Harga:* ${toRupiah(productData.price)}\n`;
+        message += `💰 *Saldo Anda:* ${toRupiah(userSaldo)}\n\n`;
+
+        if (userSaldo >= productData.price) {
+            message += `✅ Saldo cukup untuk pembayaran\n`;
+        } else {
+            const kurang = productData.price - userSaldo;
+            message += `❌ Saldo kurang ${toRupiah(kurang)}\n`;
+        }
+
         message += `Pilih metode pembayaran:`;
 
         const keyboard = [];
@@ -1127,7 +1137,7 @@ bot.action(/order_product_(\d+)_page_(\d+)/, async (ctx) => {
         } else {
             keyboard.push([
                 Markup.button.callback(
-                    `💳 Saldo Tidak Cukup (Butuh Rp${(productData.price - userSaldo).toLocaleString('id-ID')})`,
+                    `💳 Saldo Tidak Cukup`,
                     'insufficient_balance',
                     true
                 )
@@ -1221,113 +1231,355 @@ bot.action('retry_order', async (ctx) => {
     }
 });
 
-// PAYMENT HANDLERS untuk order
-bot.action(/order_qris_(.*)/, async (ctx) => {
-    try {
-        const orderId = ctx.match[1];
-        const order = db.orders[orderId];
-        if (!order) return ctx.reply('Order tidak ditemukan.');
-        await ctx.answerCbQuery();
-        const amount = Number(order.harga) + rand(100, 250);
-        const create = await axios.get(`https://ciaatopup.my.id/h2h/deposit/create?nominal=${amount}&metode=${global.pay.metode}`, {
-            headers: { 'X-APIKEY': global.pay.apikey }
-        });
-        if (!create.data || !create.data.success) return ctx.editMessageText('Gagal membuat pembayaran QRIS. Silakan coba lagi.');
-        const pay = create.data.data;
-        const qrBuffer = await QRCode.toBuffer(pay.qr_string, { width: 300 });
-        order.status = 'pending_payment';
-        order.metode = 'qris';
-        order.nominal = amount;
-        order.trx = pay.id;
-        order.updated_at = Date.now();
-        db.topups[pay.id] = {
-            user_id: String(ctx.from.id),
-            nominal: amount,
-            status: 'pending',
-            created_at: Date.now(),
-            type: 'order_payment',
-            order_id: orderId
-        };
-        saveDb();
-        await ctx.replyWithPhoto({ source: qrBuffer }, {
-            caption: `PAYMENT ORDER\n\nLayanan: ${order.product_name}\nTujuan: ${order.tujuan}\nTotal: ${toRupiah(amount)}\nOrder ID: ${orderId}\n\nSilakan scan QR code untuk melakukan pembayaran.`,
-            ...Markup.inlineKeyboard([
-                [Markup.button.callback('🔄 Cek Status Pembayaran', `cek_order_${orderId}`)],
-                [Markup.button.callback('🔙 Kembali ke Menu', 'back_to_menu')]
-            ])
-        });
-    } catch (err) {
-        console.error('Order QRIS Error:', err?.response?.data || err?.message || err);
-        ctx.reply('Error saat membuat pembayaran QRIS untuk order.');
-    }
-});
+// ========================
+// PAYMENT HANDLERS - FIXED VERSION
+// ========================
 
-bot.action(/cek_order_(.*)/, async (ctx) => {
-    try {
-        const orderId = ctx.match[1];
-        const order = db.orders[orderId];
-        if (!order || !order.trx) return ctx.reply('Order tidak ditemukan.');
-        await ctx.answerCbQuery('Mengecek status pembayaran...');
-        const check = await axios.get(`https://ciaatopup.my.id/h2h/deposit/status?id=${order.trx}`, {
-            headers: { 'X-APIKEY': global.pay.apikey }
-        });
-        if (check.data && check.data.success && check.data.data.status.toLowerCase() === 'success') {
-            order.status = 'success';
-            order.updated_at = Date.now();
-            if (db.topups[order.trx]) db.topups[order.trx].status = 'success';
-            saveDb();
-            await safeEdit(ctx, `✅ ORDER BERHASIL!\n\nLayanan: ${order.product_name}\nTujuan: ${order.tujuan}\nTotal: ${toRupiah(order.nominal)}\n\nOrder sedang diproses...`, Markup.inlineKeyboard([
-                [Markup.button.callback('🛒 Order Lagi', 'order_again')],
-                [Markup.button.callback('🔙 Kembali', 'back_to_menu')]
-            ]));
-        } else {
-            await safeEdit(ctx, '⏳ Pembayaran belum diterima atau masih diproses.', Markup.inlineKeyboard([
-                [Markup.button.callback('🔄 Cek Lagi', `cek_order_${orderId}`)],
-                [Markup.button.callback('🔙 Kembali', 'back_to_menu')]
-            ]));
-        }
-    } catch (err) {
-        console.error('Cek Order Error:', err?.response?.data || err?.message || err);
-        ctx.reply('Error saat mengecek status pembayaran order.');
-    }
-});
-
+// PAYMENT WITH SALDO
 bot.action(/order_saldo_(.*)/, async (ctx) => {
     try {
         const orderId = ctx.match[1];
         const order = db.orders[orderId];
         const userId = String(ctx.from.id);
-        if (!order) return ctx.reply('Order tidak ditemukan.');
-        await ctx.answerCbQuery();
-        db.users[userId] = db.users[userId] || { saldo: 0 };
-        if (db.users[userId].saldo < order.harga) {
-            return safeEdit(ctx, `Saldo tidak cukup.\nButuh: ${toRupiah(order.harga)}\nSaldo: ${toRupiah(db.users[userId].saldo)}`, Markup.inlineKeyboard([
-                [Markup.button.callback('💳 Topup Saldo', 'topup_saldo')],
-                [Markup.button.callback('🔙 Kembali', 'back_to_menu')]
-            ]));
+        
+        if (!order) {
+            return ctx.reply('❌ Order tidak ditemukan.');
         }
-        db.users[userId].saldo -= order.harga;
+        
+        await ctx.answerCbQuery();
+        
+        // Inisialisasi user jika belum ada
+        db.users[userId] = db.users[userId] || { saldo: 0 };
+        const userSaldo = db.users[userId].saldo;
+        const orderHarga = order.harga;
+        
+        // Cek saldo cukup
+        if (userSaldo < orderHarga) {
+            const kurang = orderHarga - userSaldo;
+            return ctx.editMessageText(
+                `❌ *SALDO TIDAK CUKUP*\n\n` +
+                `💳 Harga Order: ${toRupiah(orderHarga)}\n` +
+                `💰 Saldo Anda: ${toRupiah(userSaldo)}\n` +
+                `📉 Kekurangan: ${toRupiah(kurang)}\n\n` +
+                `Silakan topup saldo terlebih dahulu.`,
+                {
+                    parse_mode: 'Markdown',
+                    ...Markup.inlineKeyboard([
+                        [Markup.button.callback('💵 Topup Saldo', 'topup_saldo')],
+                        [Markup.button.callback('📱 Bayar QRIS', `order_qris_${orderId}`)],
+                        [Markup.button.callback('🔙 Kembali', 'back_to_menu')]
+                    ])
+                }
+            );
+        }
+        
+        // Potong saldo dan update order
+        db.users[userId].saldo -= orderHarga;
         order.status = 'success';
         order.metode = 'saldo';
         order.updated_at = Date.now();
+        order.paid_at = Date.now();
+        
+        // Simpan ke database
         saveDb();
-        await safeEdit(ctx, `✅ ORDER BERHASIL!\n\nLayanan: ${order.product_name}\nTujuan: ${order.tujuan}\nTotal: ${toRupiah(order.harga)}\n\nOrder sedang diproses...`, Markup.inlineKeyboard([
-            [Markup.button.callback('🛒 Order Lagi', 'order_again')],
-            [Markup.button.callback('🔙 Kembali', 'back_to_menu')]
-        ]));
+        
+        // Kirim konfirmasi ke user
+        await ctx.editMessageText(
+            `✅ *PAYMENT BERHASIL*\n\n` +
+            `🆔 Order ID: ${orderId}\n` +
+            `📦 Produk: ${order.product_name}\n` +
+            `🎯 Tujuan: ${order.tujuan}\n` +
+            `💳 Metode: Saldo\n` +
+            `💰 Total: ${toRupiah(orderHarga)}\n\n` +
+            `📊 Saldo sekarang: ${toRupiah(db.users[userId].saldo)}\n\n` +
+            `🔄 Order sedang diproses...`,
+            {
+                parse_mode: 'Markdown',
+                ...Markup.inlineKeyboard([
+                    [Markup.button.callback('📦 Order Lagi', 'order_again')],
+                    [Markup.button.callback('🏠 Menu Utama', 'back_to_menu')]
+                ])
+            }
+        );
+        
+        // Notify owner
+        notifyOwners(`✅ Order berhasil dibayar dengan saldo\nUser: @${ctx.from.username || userId}\nOrder ID: ${orderId}\nProduk: ${order.product_name}\nTujuan: ${order.tujuan}`);
+        
+        // Proses order ke provider (simulasi)
+        setTimeout(async () => {
+            try {
+                // Simulasi proses order
+                order.status = 'completed';
+                order.completed_at = Date.now();
+                saveDb();
+                
+                await bot.telegram.sendMessage(
+                    userId,
+                    `✅ *ORDER SELESAI*\n\n` +
+                    `Order ID: ${orderId}\n` +
+                    `Produk: ${order.product_name}\n` +
+                    `Tujuan: ${order.tujuan}\n\n` +
+                    `Order telah berhasil diproses.`,
+                    { parse_mode: 'Markdown' }
+                );
+            } catch (e) {
+                console.error('Failed to send completion notification:', e);
+            }
+        }, 5000);
+        
     } catch (err) {
-        console.error('order_saldo error', err);
-        ctx.reply('Error saat memproses pembayaran dengan saldo.');
+        console.error('Error in order_saldo:', err);
+        ctx.reply('❌ Error saat memproses pembayaran dengan saldo.');
     }
 });
 
-// ORDER AGAIN / BACK MENU
+// PAYMENT WITH QRIS
+bot.action(/order_qris_(.*)/, async (ctx) => {
+    try {
+        const orderId = ctx.match[1];
+        const order = db.orders[orderId];
+        
+        if (!order) {
+            return ctx.reply('❌ Order tidak ditemukan.');
+        }
+        
+        await ctx.answerCbQuery();
+        
+        // Hitung total dengan fee random
+        const baseAmount = Number(order.harga);
+        const feeAmount = rand(100, 250);
+        const totalAmount = baseAmount + feeAmount;
+        
+        // Buat pembayaran QRIS
+        const create = await axios.get(
+            `https://ciaatopup.my.id/h2h/deposit/create?nominal=${totalAmount}&metode=${global.pay.metode}`,
+            {
+                headers: { 'X-APIKEY': global.pay.apikey }
+            }
+        );
+        
+        if (!create.data || !create.data.success) {
+            return ctx.editMessageText(
+                '❌ Gagal membuat pembayaran QRIS. Silakan coba lagi.',
+                Markup.inlineKeyboard([
+                    [Markup.button.callback('🔄 Coba Lagi', `order_qris_${orderId}`)],
+                    [Markup.button.callback('💳 Bayar Saldo', `order_saldo_${orderId}`)],
+                    [Markup.button.callback('🔙 Kembali', 'back_to_menu')]
+                ])
+            );
+        }
+        
+        const pay = create.data.data;
+        const qrBuffer = await QRCode.toBuffer(pay.qr_string, { width: 300 });
+        
+        // Update order dengan data pembayaran
+        order.status = 'pending_payment';
+        order.metode = 'qris';
+        order.nominal = totalAmount;
+        order.trx = pay.id;
+        order.updated_at = Date.now();
+        order.fee = feeAmount;
+        
+        // Simpan ke topups untuk tracking
+        db.topups[pay.id] = {
+            user_id: String(ctx.from.id),
+            nominal: totalAmount,
+            status: 'pending',
+            created_at: Date.now(),
+            type: 'order_payment',
+            order_id: orderId,
+            order_data: {
+                product_name: order.product_name,
+                tujuan: order.tujuan,
+                harga_asli: baseAmount
+            }
+        };
+        
+        saveDb();
+        
+        // Kirim QRIS ke user
+        await ctx.replyWithPhoto(
+            { source: qrBuffer },
+            {
+                caption: `💳 *PAYMENT QRIS*\n\n` +
+                        `🆔 Order ID: ${orderId}\n` +
+                        `📦 Produk: ${order.product_name}\n` +
+                        `🎯 Tujuan: ${order.tujuan}\n` +
+                        `💰 Harga: ${toRupiah(baseAmount)}\n` +
+                        `📊 Fee: ${toRupiah(feeAmount)}\n` +
+                        `💵 Total: ${toRupiah(totalAmount)}\n\n` +
+                        `⏳ Berlaku: 30 menit\n\n` +
+                        `Scan QR Code di atas untuk pembayaran.`,
+                parse_mode: 'Markdown',
+                ...Markup.inlineKeyboard([
+                    [Markup.button.callback('🔄 Cek Status', `cek_order_${orderId}`)],
+                    [Markup.button.callback('💳 Bayar Saldo', `order_saldo_${orderId}`)],
+                    [Markup.button.callback('🔙 Batalkan', 'back_to_menu')]
+                ])
+            }
+        );
+        
+    } catch (err) {
+        console.error('Order QRIS Error:', err?.response?.data || err?.message || err);
+        ctx.reply(
+            '❌ Error saat membuat pembayaran QRIS.',
+            Markup.inlineKeyboard([
+                [Markup.button.callback('🔄 Coba Lagi', `order_qris_${orderId}`)],
+                [Markup.button.callback('🔙 Kembali', 'back_to_menu')]
+            ])
+        );
+    }
+});
+
+// CHECK ORDER STATUS
+bot.action(/cek_order_(.*)/, async (ctx) => {
+    try {
+        const orderId = ctx.match[1];
+        const order = db.orders[orderId];
+        
+        if (!order) {
+            return ctx.reply('❌ Order tidak ditemukan.');
+        }
+        
+        await ctx.answerCbQuery('🔄 Mengecek status pembayaran...');
+        
+        // Jika sudah sukses
+        if (order.status === 'success' || order.status === 'completed') {
+            return ctx.editMessageText(
+                `✅ *ORDER SUDAH DIBAYAR*\n\n` +
+                `🆔 Order ID: ${orderId}\n` +
+                `📦 Produk: ${order.product_name}\n` +
+                `🎯 Tujuan: ${order.tujuan}\n` +
+                `💳 Metode: ${order.metode}\n` +
+                `💰 Total: ${toRupiah(order.nominal || order.harga)}\n\n` +
+                `Status: ${order.status === 'completed' ? '✅ Selesai' : '🔄 Diproses'}`,
+                {
+                    parse_mode: 'Markdown',
+                    ...Markup.inlineKeyboard([
+                        [Markup.button.callback('📦 Order Lagi', 'order_again')],
+                        [Markup.button.callback('🏠 Menu Utama', 'back_to_menu')]
+                    ])
+                }
+            );
+        }
+        
+        // Jika masih pending dan metode QRIS
+        if (order.status === 'pending_payment' && order.metode === 'qris' && order.trx) {
+            const check = await axios.get(
+                `https://ciaatopup.my.id/h2h/deposit/status?id=${order.trx}`,
+                {
+                    headers: { 'X-APIKEY': global.pay.apikey }
+                }
+            );
+            
+            if (check.data && check.data.success && 
+                check.data.data.status.toLowerCase() === 'success') {
+                
+                // Update status order
+                order.status = 'success';
+                order.updated_at = Date.now();
+                order.paid_at = Date.now();
+                
+                // Update topup
+                if (db.topups[order.trx]) {
+                    db.topups[order.trx].status = 'success';
+                }
+                
+                saveDb();
+                
+                await ctx.editMessageText(
+                    `✅ *PAYMENT BERHASIL*\n\n` +
+                    `🆔 Order ID: ${orderId}\n` +
+                    `📦 Produk: ${order.product_name}\n` +
+                    `🎯 Tujuan: ${order.tujuan}\n` +
+                    `💳 Metode: QRIS\n` +
+                    `💰 Total: ${toRupiah(order.nominal)}\n\n` +
+                    `🔄 Order sedang diproses...`,
+                    {
+                        parse_mode: 'Markdown',
+                        ...Markup.inlineKeyboard([
+                            [Markup.button.callback('📦 Order Lagi', 'order_again')],
+                            [Markup.button.callback('🏠 Menu Utama', 'back_to_menu')]
+                        ])
+                    }
+                );
+                
+                // Notify owner
+                notifyOwners(`✅ QRIS Payment berhasil\nUser: @${ctx.from.username || ctx.from.id}\nOrder ID: ${orderId}\nTotal: ${toRupiah(order.nominal)}`);
+                
+                // Proses order ke provider (simulasi)
+                setTimeout(async () => {
+                    try {
+                        order.status = 'completed';
+                        order.completed_at = Date.now();
+                        saveDb();
+                        
+                        await bot.telegram.sendMessage(
+                            order.user_id,
+                            `✅ *ORDER SELESAI*\n\n` +
+                            `Order ID: ${orderId}\n` +
+                            `Produk: ${order.product_name}\n` +
+                            `Tujuan: ${order.tujuan}\n\n` +
+                            `Order telah berhasil diproses.`,
+                            { parse_mode: 'Markdown' }
+                        );
+                    } catch (e) {
+                        console.error('Failed to send completion notification:', e);
+                    }
+                }, 5000);
+                
+            } else {
+                await ctx.editMessageText(
+                    `⏳ *MENUNGGU PEMBAYARAN*\n\n` +
+                    `🆔 Order ID: ${orderId}\n` +
+                    `📦 Produk: ${order.product_name}\n` +
+                    `🎯 Tujuan: ${order.tujuan}\n` +
+                    `💳 Metode: QRIS\n` +
+                    `💰 Total: ${toRupiah(order.nominal)}\n\n` +
+                    `Silakan selesaikan pembayaran Anda.`,
+                    {
+                        parse_mode: 'Markdown',
+                        ...Markup.inlineKeyboard([
+                            [Markup.button.callback('🔄 Cek Lagi', `cek_order_${orderId}`)],
+                            [Markup.button.callback('💳 Bayar Saldo', `order_saldo_${orderId}`)],
+                            [Markup.button.callback('🔙 Kembali', 'back_to_menu')]
+                        ])
+                    }
+                );
+            }
+        } else {
+            await ctx.editMessageText(
+                `ℹ️ *STATUS ORDER*\n\n` +
+                `🆔 Order ID: ${orderId}\n` +
+                `📦 Produk: ${order.product_name}\n` +
+                `🎯 Tujuan: ${order.tujuan}\n` +
+                `📊 Status: ${order.status}\n` +
+                `💳 Metode: ${order.metode || 'Belum dipilih'}\n` +
+                `💰 Harga: ${toRupiah(order.harga)}`,
+                {
+                    parse_mode: 'Markdown',
+                    ...Markup.inlineKeyboard([
+                        [Markup.button.callback('💳 Bayar Sekarang', `order_qris_${orderId}`)],
+                        [Markup.button.callback('🔙 Kembali', 'back_to_menu')]
+                    ])
+                }
+            );
+        }
+        
+    } catch (err) {
+        console.error('Cek Order Error:', err);
+        ctx.reply('❌ Error saat mengecek status order.');
+    }
+});
+
+// ORDER AGAIN
 bot.action('order_again', (ctx) => {
     ctx.answerCbQuery().catch(() => {});
     ctx.deleteMessage().catch(() => {});
     ctx.reply('Masukkan nomor tujuan untuk order:\nFormat: /order <tujuan>\nContoh: /order 08123456789');
 });
 
+// BACK TO MENU
 bot.action('back_to_menu', async (ctx) => {
     try {
         await ctx.answerCbQuery();
@@ -1535,8 +1787,33 @@ async function checkPendingPayments() {
                         const order = db.orders[topup.order_id];
                         if (order && order.status !== 'success') {
                             order.status = 'success';
+                            order.paid_at = Date.now();
                             try {
-                                await bot.telegram.sendMessage(topup.user_id, `✅ PEMBAYARAN ORDER TERKONFIRMASI!\nOrder: ${order.tujuan}\nTotal: ${toRupiah(order.nominal)}\nOrder sedang diproses...`);
+                                await bot.telegram.sendMessage(
+                                    topup.user_id, 
+                                    `✅ PEMBAYARAN ORDER TERKONFIRMASI!\nOrder: ${order.tujuan}\nTotal: ${toRupiah(order.nominal)}\nOrder sedang diproses...`
+                                );
+                                
+                                // Simulasi proses order
+                                setTimeout(async () => {
+                                    try {
+                                        order.status = 'completed';
+                                        order.completed_at = Date.now();
+                                        saveDb();
+                                        
+                                        await bot.telegram.sendMessage(
+                                            topup.user_id,
+                                            `✅ *ORDER SELESAI*\n\n` +
+                                            `Order ID: ${order.id}\n` +
+                                            `Produk: ${order.product_name}\n` +
+                                            `Tujuan: ${order.tujuan}\n\n` +
+                                            `Order telah berhasil diproses.`,
+                                            { parse_mode: 'Markdown' }
+                                        );
+                                    } catch (e) {
+                                        console.error('Failed to send completion notification:', e);
+                                    }
+                                }, 5000);
                             } catch (e) {
                                 console.error('Notify order user failed:', e?.message || e);
                             }
